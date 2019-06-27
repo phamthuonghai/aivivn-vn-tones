@@ -17,7 +17,7 @@ TRAIN_DIR=${PROJECT}/t2t_train/${PROBLEM}/${MODEL}-${HPARAMS}-${SUFFIX}
 
 # Decode
 
-DECODE_FILE=${TMP_DIR}/test.d
+DECODE_FILE=${TMP_DIR}/dev.d
 
 BEAM_SIZE=4
 ALPHA=0.6
@@ -29,11 +29,6 @@ t2t-decoder \
   --model=${MODEL} \
   --hparams_set=${HPARAMS} \
   --output_dir=${TRAIN_DIR} \
-  --decode_hparams="beam_size=${BEAM_SIZE},alpha=${ALPHA},batch_size=100" \
+  --decode_hparams="beam_size=${BEAM_SIZE},alpha=${ALPHA},batch_size=64" \
   --decode_from_file=${DECODE_FILE} \
-  --decode_to_file=raw-${PREFIX}.pred
-
-paste -d ',' ./input/test.ids raw-${PREFIX}.pred > presub1-${PREFIX}.csv
-python utils.py post_process --presub=presub1-${PREFIX}.csv --sub=presub2-${PREFIX}.csv
-grep -f input/sample_submission.ids presub2-${PREFIX}.csv > sub-${PREFIX}.csv
-rm presub1-${PREFIX}.csv presub2-${PREFIX}.csv
+  --decode_to_file=dev-raw-${PREFIX}.pred
