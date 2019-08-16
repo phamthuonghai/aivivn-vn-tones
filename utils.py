@@ -2,6 +2,7 @@
 import codecs
 import csv
 import re
+from collections import defaultdict
 
 import fire
 
@@ -55,6 +56,52 @@ def decompose_predicted_test_file(in_path, out_no_tone_path=None, out_simplified
 
 
 def rematch(test_words, output_words, detone_output_words):
+    if len(output_words) == 0:
+        return [0] * len(test_words)
+
+    if len(test_words) == 0:
+        return []
+
+    f = defaultdict(int)
+    trc = {}
+    is_match = defaultdict(bool)
+
+    # DP
+    for i_test in range(len(test_words)):
+        for i_out in range(len(detone_output_words)):
+            f[i_test, i_out] = f[i_test - 1, i_out]
+            trc[i_test, i_out] = (-1, 0)
+
+            if f[i_test, i_out] < f[i_test, i_out - 1]:
+                f[i_test, i_out] = f[i_test, i_out - 1]
+                trc[i_test, i_out] = (0, -1)
+
+            match = test_words[i_test] == detone_output_words[i_out]
+            if f[i_test, i_out] < f[i_test - 1, i_out - 1] + int(match):
+                f[i_test, i_out] = f[i_test - 1, i_out - 1] + int(match)
+                trc[i_test, i_out] = (-1, -1)
+                is_match[i_test, i_out] = match
+
+    # Trace
+    i_test = len(test_words) - 1
+    i_out = len(detone_output_words) - 1
+    res = []
+    while i_test >= 0 and i_out >= 0:
+        move = trc[i_test, i_out]
+        if is_match[i_test, i_out]:
+            res.append(output_words[i_out])
+        elif move[0] == -1:
+            res.append(0)
+        i_test += move[0]
+        i_out += move[1]
+
+    res += [0] * (i_test+1)
+
+    assert len(res) == len(test_words)
+    return list(reversed(res))
+
+
+def rematch_greedy(test_words, output_words, detone_output_words):
     test_words.append('<EOS>')
     output_words.append(0)
     detone_output_words.append('<EOS>')
